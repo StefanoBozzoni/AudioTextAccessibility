@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ Copyright 2016 Google Inc.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!--"feedbackGeneric"-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:name=".MyAccessibilityService"
+    android:label="AudioText Assistant"
+    android:accessibilityFeedbackType="feedbackAllMask|feedbackSpoken"
+    android:accessibilityFlags="flagRequestEnhancedWebAccessibility|flagIncludeNotImportantViews|flagRequestTouchExplorationMode|flagRetrieveInteractiveWindows|flagDefault|flagRequestShortcutWarningDialogSpokenFeedback"
+    android:canPerformGestures="true"
+    android:notificationTimeout="100"
+    android:isAccessibilityTool="true"
+    android:canRequestEnhancedWebAccessibility = "true"
+    android:description = "@string/info_service_short"
+    android:accessibilityEventTypes= "typeAllMask"
+    android:canRetrieveWindowContent="true"
+    tools:targetApi="s" />
