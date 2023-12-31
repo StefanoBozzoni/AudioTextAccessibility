@@ -1,4 +1,4 @@
-package com.example.accessibilityexperience
+package com.sbsoft.audiotextassistant
 
 import android.content.Context
 import android.graphics.Canvas

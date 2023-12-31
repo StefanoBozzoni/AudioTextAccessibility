@@ -1,11 +1,10 @@
-package com.example.accessibilityexperience
+package com.sbsoft.audiotextassistant
 
 import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Gravity

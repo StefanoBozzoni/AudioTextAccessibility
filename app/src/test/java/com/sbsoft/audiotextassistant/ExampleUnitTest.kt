@@ -1,4 +1,4 @@
-package com.example.accessibilityexperience
+package com.sbsoft.audiotextassistant
 
 import org.junit.Test
 

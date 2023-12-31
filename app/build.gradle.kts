@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "com.example.accessibilityexperience"
+    namespace = "com.sbsoft.audiotextassistant"
     compileSdk = 34
 
     defaultConfig {
         android.buildFeatures.buildConfig = true
-        applicationId = "com.example.accessibilityexperience"
+        applicationId = "com.sbsoft.audiotextassistant"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
