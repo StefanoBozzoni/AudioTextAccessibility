@@ -30,6 +30,6 @@
        android:src="@drawable/text_to_speech_40"
        android:contentDescription="speaker on"
        android:importantForAccessibility="no"
-       android:tint="@color/orange_500" />
+       android:tint="@color/red_500" />
 
 </LinearLayout>

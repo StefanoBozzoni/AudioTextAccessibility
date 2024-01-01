@@ -19,6 +19,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
@@ -43,8 +44,7 @@ class MyAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
 
         val sdf = SimpleDateFormat("dd-MM-yyyy hh:mm:ss", Locale.ITALIAN)
-        val dateInString = "01-04-2024 00:00:00"
-        val finalDate: Date? = sdf.parse(dateInString)
+        val finalDate: Date? = sdf.parse(TIMEOUT_DATE_STR)
 
         val timestamp = System.currentTimeMillis()
         val currentDate = Date(timestamp)
@@ -57,7 +57,7 @@ class MyAccessibilityService : AccessibilityService() {
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts.setLanguage(Locale.getDefault())
-                tts.setSpeechRate(1.2f)
+                tts.setSpeechRate(1f)
             }
         }
 
@@ -115,12 +115,12 @@ class MyAccessibilityService : AccessibilityService() {
                 if (testo=="Indietro") {
                     tts.stop()
                 }
-                if (testo.isNotEmpty()) {
+                if (testo.isNotEmpty() && testo!="null") {
                     speakText(testo, speakerState == SpeakerState.SPEAKEROFF && (firstTimeSpeakerOff==true))
                     firstTimeSpeakerOff = false
                 } else if (it.source?.text!=null) {
                     it.source?.let {
-                        printTree(it)
+                        examineTree(it)
                     }
                 }
                 //printTree(rootInActiveWindow)
@@ -131,7 +131,7 @@ class MyAccessibilityService : AccessibilityService() {
 
 
     private fun speakText(testo: String, overrideCheck: Boolean = false) {
-        if (speakerState == SpeakerState.SPEAKERON || overrideCheck) {
+        if (testo!="null" && (speakerState == SpeakerState.SPEAKERON || overrideCheck)) {
             tts.speak(testo,
                 TextToSpeech.QUEUE_ADD,
                 null,
@@ -149,7 +149,7 @@ class MyAccessibilityService : AccessibilityService() {
         Log.d("XDEBUG Action changed","")
     }
 
-    private fun printTree(root: AccessibilityNodeInfo) {
+    private fun examineTree(root: AccessibilityNodeInfo) {
         val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
         deque.add(root)
         while (!deque.isEmpty()) {

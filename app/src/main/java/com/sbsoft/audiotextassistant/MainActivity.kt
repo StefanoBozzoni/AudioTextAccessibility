@@ -4,15 +4,20 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
+import android.view.View.FOCUS_UP
 import android.widget.Button
+import android.widget.ScrollView
 import android.widget.ViewFlipper
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,8 +55,7 @@ class MainActivity : AppCompatActivity() {
         val vflipper = findViewById<ViewFlipper>(R.id.vflipper)
 
         val sdf = SimpleDateFormat("dd-MM-yyyy hh:mm:ss", Locale.ITALIAN)
-        val dateInString = "01-04-2024 00:00:00"
-        val finalDate: Date? = sdf.parse(dateInString)
+        val finalDate: Date? = sdf.parse(TIMEOUT_DATE_STR)
 
         val timestamp = System.currentTimeMillis()
         val currentDate = Date(timestamp)
@@ -65,6 +69,9 @@ class MainActivity : AppCompatActivity() {
                 vflipper.displayedChild = 0
             }
         }
+
+        val scrollView = findViewById<ScrollView>(R.id.scrollview)
+        scrollView.fullScroll(FOCUS_UP)
     }
 
     private  fun checkEnabled():Boolean {

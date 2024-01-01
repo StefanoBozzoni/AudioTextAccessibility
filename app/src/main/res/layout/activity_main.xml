@@ -4,95 +4,104 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:cozntext=".MainActivity">
 
-    <ViewFlipper
-        android:id="@+id/vflipper"
+    <ScrollView
+        android:id="@+id/scrollview"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <ViewFlipper
+            android:id="@+id/vflipper"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <TextView
-                android:id="@+id/tvMainMessage"
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="48dp"
-                android:text="@string/info_service"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:layout_height="match_parent">
 
-            <Button
-                android:id="@+id/btnAbilita"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Enable"
-                android:textAllCaps="false"
-                app:layout_constraintEnd_toEndOf="@+id/tvMainMessage"
-                app:layout_constraintStart_toStartOf="@+id/tvMainMessage"
-                app:layout_constraintTop_toBottomOf="@+id/tvMainMessage" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <TextView
+                    android:id="@+id/tvMainMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="48dp"
+                    android:text="@string/info_service"
+                    android:textSize="24sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <TextView
-                android:id="@+id/tvSuccessMessage"
+                <Button
+                    android:id="@+id/btnAbilita"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Enable"
+                    android:textAllCaps="false"
+                    app:layout_constraintEnd_toEndOf="@+id/tvMainMessage"
+                    app:layout_constraintStart_toStartOf="@+id/tvMainMessage"
+                    app:layout_constraintTop_toBottomOf="@+id/tvMainMessage" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="48dp"
-                android:text="The service is active, you can close this window."
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:layout_height="match_parent">
 
-            <Button
-                android:id="@+id/btnClose"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Close"
-                android:textAllCaps="false"
-                app:layout_constraintEnd_toEndOf="@+id/tvSuccessMessage"
-                app:layout_constraintStart_toStartOf="@+id/tvSuccessMessage"
-                app:layout_constraintTop_toBottomOf="@+id/tvSuccessMessage" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <TextView
+                    android:id="@+id/tvSuccessMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="48dp"
+                    android:text="The service is active, you can close this window."
+                    android:textSize="24sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <TextView
-                android:id="@+id/tvOutdateMessgae"
+                <Button
+                    android:id="@+id/btnClose"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Close"
+                    android:textAllCaps="false"
+                    app:layout_constraintEnd_toEndOf="@+id/tvSuccessMessage"
+                    app:layout_constraintStart_toStartOf="@+id/tvSuccessMessage"
+                    app:layout_constraintTop_toBottomOf="@+id/tvSuccessMessage" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="48dp"
-                android:text="@string/outdated_app_message"
-                android:textSize="24sp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:layout_height="match_parent">
 
-            <Button
-                android:id="@+id/btnExit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="Exit"
-                android:textAllCaps="false"
-                app:layout_constraintEnd_toEndOf="@+id/tvOutdateMessgae"
-                app:layout_constraintStart_toStartOf="@+id/tvOutdateMessgae"
-                app:layout_constraintTop_toBottomOf="@+id/tvOutdateMessgae" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+                <TextView
+                    android:id="@+id/tvOutdateMessgae"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="48dp"
+                    android:text="@string/outdated_app_message"
+                    android:textSize="24sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <Button
+                    android:id="@+id/btnExit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Exit"
+                    android:textAllCaps="false"
+                    app:layout_constraintEnd_toEndOf="@+id/tvOutdateMessgae"
+                    app:layout_constraintStart_toStartOf="@+id/tvOutdateMessgae"
+                    app:layout_constraintTop_toBottomOf="@+id/tvOutdateMessgae" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    </ViewFlipper>
+        </ViewFlipper>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

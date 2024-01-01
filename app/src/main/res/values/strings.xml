@@ -3,8 +3,8 @@
     <string name="power">Power</string>
     <string name="scanstr">Scan</string>
     <string name="snapshotstr">Snapshot</string>
-    <string name="info_service">This service assists you in listening to WhatsApp messages, web and other apps content through voice narration. To activate this feature, kindly grant the required permissions. Press \'Enable,\' and in the subsequent window, enable the AudioText Assistant application. Optionally, you may also enable the shortcut switch. Sometimes you have to first select \'downloaded app\' and then select \'AudioText Assistant\'.</string>
-    <string name="info_service_short">This service assists you in listening to WhatsApp messages, web and other apps content through voice narration. To activate this feature, kindly grant the above required permissions.</string>
+    <string name="info_service">This service assists you in listening to chat messages, web and other apps content through voice narration. To activate this feature, kindly grant the required permissions. Press \'Enable,\' and in the subsequent window, enable the AudioText Assistant application. Optionally, you may also enable the shortcut switch. Sometimes you have to first select \'downloaded app\' and then select \'AudioText Assistant\'.</string>
+    <string name="info_service_short">This service assists you in listening to chat messages, web and other apps content through voice narration. To activate this feature, kindly grant the above required permissions.</string>
     <string name="outdated_app_message">The app is outdated and will not work. You have to update it from the playstore.</string>
 
 </resources>
