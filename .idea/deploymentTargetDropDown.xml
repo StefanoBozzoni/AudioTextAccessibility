@@ -3,15 +3,16 @@
   <component name="deploymentTargetDropDown">
     <targetSelectedWithDropDown>
       <Target>
-        <type value="QUICK_BOOT_TARGET" />
+        <type value="BOOT_WITH_SNAPSHOT_TARGET" />
         <deviceKey>
           <Key>
             <type value="VIRTUAL_DEVICE_PATH" />
-            <value value="C:\Users\VjDev\AppData\Local\Android\Sdk\.android\avd\Pixel_6_API_34.avd" />
+            <value value="C:\Users\VjDev\AppData\Local\Android\Sdk\.android\avd\Nexus_10_API_33.avd" />
           </Key>
         </deviceKey>
+        <snapshotKey value="C:\Users\VjDev\AppData\Local\Android\Sdk\.android\avd\Nexus_10_API_33.avd\snapshots\snap_2023-12-28_18-19-55" />
       </Target>
     </targetSelectedWithDropDown>
-    <timeTargetWasSelectedWithDropDown value="2024-01-01T22:08:08.107970400Z" />
+    <timeTargetWasSelectedWithDropDown value="2024-01-01T22:55:57.829625100Z" />
   </component>
 </project>
