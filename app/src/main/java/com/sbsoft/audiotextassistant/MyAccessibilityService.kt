@@ -112,19 +112,64 @@ class MyAccessibilityService : AccessibilityService() {
                 Log.d("XDEBUG source present", if (it.source!=null) "present" else "not present")
 
                 val testo = it.text.joinToString()
-                if (testo=="Indietro") {
+                if (testo == "Indietro") {
                     tts.stop()
                 }
-                if (testo.isNotEmpty() && testo!="null") {
-                    speakText(testo, speakerState == SpeakerState.SPEAKEROFF && (firstTimeSpeakerOff==true))
+                if (testo.isNotEmpty() && testo.lowercase() != "null") {
+                    speakText(testo, speakerState == SpeakerState.SPEAKEROFF && (firstTimeSpeakerOff == true))
                     firstTimeSpeakerOff = false
-                } else if (it.source?.text!=null) {
+                } else if (it.source != null) {
                     it.source?.let {
                         examineTree(it)
                     }
                 }
-                //printTree(rootInActiveWindow)
             }
+
+            /*
+            if (it.eventType== TYPE_WINDOW_STATE_CHANGED) {
+                tts.stop()
+            }
+
+            if (it.eventType== TYPE_WINDOW_CONTENT_CHANGED) {
+                val node = it.source
+                Log.d("XDEBUG source.classname", (node?.className.toString()))
+                Log.d("XDEBUG source.text", it.source?.text.toString())
+
+
+                // Get the root node of the current window
+                val root = node?.getParent()
+                if (root != null) {
+                    // Get the window title
+                    val windowTitle = root.getText();
+
+                    // Log the window title
+                    Log.d("XDEBUG title3", "Window title: " + windowTitle);
+                }
+
+                if (it.source?.viewIdResourceName == "com.android.systemui:id/clock") return
+                if(node == null || !(node.className.equals("android.view.ViewGroup"))) {
+                    return
+                }
+                Log.d("XDEBUG", eventoDescr)
+                Log.d("XDEBUG text", it.text.joinToString())
+                Log.d("XDEBUG content descr", it.contentDescription.toString())
+                Log.d("XDEBUG before text", it.beforeText.toString())
+                Log.d("XDEBUG describecontent", it.describeContents().toString())
+                Log.d("XDEBUG source.text", it.source?.text.toString())
+                Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
+                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
+                Log.d("XDEBUG resource name", it.source?.viewIdResourceName.toString())
+                Log.d("XDEBUG resource windowId", it.source?.windowId.toString())
+                Log.d("XDEBUG resource visibility", it.source?.isVisibleToUser.toString())
+                val testo = it.source?.text.toString()
+                if ((testo.isNotEmpty() && testo!="null") && (it.source?.isVisibleToUser == true) && it.source!=rootNode) {
+                    //speakText(testo)
+                    root?.let {
+                        examineTree(it)
+                    }
+                    firstTimeSpeakerOff = false
+                }
+            */
             Log.d("XDEBUG event type", eventoDescr)
         }
     }
@@ -155,12 +200,12 @@ class MyAccessibilityService : AccessibilityService() {
         while (!deque.isEmpty()) {
             val node = deque.removeFirst()
             Log.d("XDEBUG text", node.className.toString()+" / "+ node.text.toString()+" / "+'/'+node.contentDescription+"/"+node.isClickable+"/"+node.isContextClickable)
-
-            if (node.isClickable) {
+            if (node.isClickable && node?.contentDescription.toString().isNotEmpty()) {
                 speakText(node?.contentDescription.toString())
-                //node.getChild(0)
             } else {
-                speakText(node?.text.toString())
+                if (node.isVisibleToUser) {
+                    speakText(node?.text.toString())
+                }
                 for (i in 0 until node.childCount) {
                     if ((node != null) && (node.getChild(i) != null)) deque.addLast(node.getChild(i))
                 }
