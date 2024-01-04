@@ -5,8 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Gravity
@@ -18,8 +16,6 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED
-import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
-import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -39,16 +35,22 @@ enum class SpeakerState {
     SPEAKEROFF
 }
 
+enum class Mode {
+    ADVANCED,
+    NORMAL
+}
+
 class MyAccessibilityService : AccessibilityService() {
     private var firstTimeSpeakerOff: Boolean = false
     var mLayout: FrameLayout? = null
-
     private lateinit var tts: TextToSpeech
-
     private var speakerState: SpeakerState = SpeakerState.SPEAKERON
+    private lateinit var mode: Mode
+    private var moved: Boolean = false
 
     override fun onServiceConnected() {
 
+        mode = Mode.NORMAL
         val sdf = SimpleDateFormat("dd-MM-yyyy hh:mm:ss", Locale.ITALIAN)
         val finalDate: Date? = sdf.parse(TIMEOUT_DATE_STR)
 
@@ -82,7 +84,9 @@ class MyAccessibilityService : AccessibilityService() {
          */
 
         btnSpeaker?.setOnLongClickListener {
-            activateOverlayScreen()
+            if (!moved) {
+                activateOverlayScreen()
+            }
             false
         }
 
@@ -107,6 +111,7 @@ class MyAccessibilityService : AccessibilityService() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun activateOverlayScreen() {
+        mode = Mode.ADVANCED
         try {
             val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
             wm.removeView(mLayout)
@@ -143,7 +148,7 @@ class MyAccessibilityService : AccessibilityService() {
                         nodefound?.let {
                             //Log.d("XDEBUG node ", nodefound.toString())
                             tts.stop()
-                            speakTree(it)
+                            speakTree(it.parent)
                         }
                         false
                     }
@@ -174,6 +179,7 @@ class MyAccessibilityService : AccessibilityService() {
     }
 
     private fun activateBasicScreen() {
+        mode = Mode.NORMAL
         try {
             val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
             if (mLayout != null) {
@@ -209,7 +215,7 @@ class MyAccessibilityService : AccessibilityService() {
         event?.let {
             val eventoDescr = AccessibilityEvent.eventTypeToString(it.eventType)
 
-            if (it.eventType == TYPE_VIEW_CLICKED) {
+            if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
                 tts.stop()
                 Log.d("XDEBUG", eventoDescr)
                 /*
@@ -237,12 +243,15 @@ class MyAccessibilityService : AccessibilityService() {
                 }
             }
 
+            /*
             if (it.eventType == TYPE_VIEW_FOCUSED) {
                 val accessibilityManager = getSystemService(AccessibilityManager::class.java)
                 Handler(Looper.getMainLooper()).postDelayed({
                     accessibilityManager.interrupt()
                 }, 6000)
             }
+
+             */
 
             Log.d("XDEBUG", eventoDescr)
         }
@@ -269,7 +278,8 @@ class MyAccessibilityService : AccessibilityService() {
         deque.add(root)
         while (!deque.isEmpty()) {
             val node = deque.removeFirst()
-            //Log.d("XDEBUG text", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
+            Log.d("XDEBUG text", node.toString())
+            Log.d("XDEBUG text", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
             if (node.isClickable && node?.contentDescription.toString().isNotEmpty()) {
                 speakText(node?.contentDescription.toString())
             } else {
@@ -304,14 +314,13 @@ class MyAccessibilityService : AccessibilityService() {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
-        val btnScan = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
+        val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
 
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
-        btnScan?.setOnTouchListener(object : View.OnTouchListener {
+        btnSpeaker?.setOnTouchListener(object : View.OnTouchListener {
             private var initialX: Int = 0
             private var initialY: Int = 0
-            private var moved: Boolean = false
             private var initialTouchX: Float = 0.toFloat()
             private var initialTouchY: Float = 0.toFloat()
 
@@ -325,28 +334,26 @@ class MyAccessibilityService : AccessibilityService() {
                         moved = false
                         return false
                     }
-
                     MotionEvent.ACTION_MOVE -> {
+                        moved = true
                         params.x = initialX + (event.rawX - initialTouchX).toInt()
                         params.y = initialY + (event.rawY - initialTouchY).toInt()
                         windowManager.updateViewLayout(mLayout, params)
-                        moved = true
                         return false
                     }
-
                     MotionEvent.ACTION_UP -> {
                         // Perform a click action when the touch is released
                         if (!moved) {
                             v.post {
                                 switchSpeakerOnOff()
-                                v.performClick()
+                                //v.performClick()
                             }
-
                             return false
-                        } else
+                        } else {
+                            moved = false
                             return true
+                        }
                     }
-
                     else -> return false
                 }
             }
