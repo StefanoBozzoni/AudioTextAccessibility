@@ -16,6 +16,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED
+import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -243,15 +244,12 @@ class MyAccessibilityService : AccessibilityService() {
                 }
             }
 
-            /*
             if (it.eventType == TYPE_VIEW_FOCUSED) {
-                val accessibilityManager = getSystemService(AccessibilityManager::class.java)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    accessibilityManager.interrupt()
-                }, 6000)
+                val rootNode = rootInActiveWindow
+                if (rootNode != null) {
+                    rootNode.getChild(0).performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                }
             }
-
-             */
 
             Log.d("XDEBUG", eventoDescr)
         }

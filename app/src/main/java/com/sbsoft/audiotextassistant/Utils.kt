@@ -58,7 +58,7 @@ object Utils {
         return Point(screenX, screenY)
     }
 
-    private fun printTree(root: AccessibilityNodeInfo) {
+    fun printTree(root: AccessibilityNodeInfo) {
         val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
         deque.add(root)
         while (!deque.isEmpty()) {
