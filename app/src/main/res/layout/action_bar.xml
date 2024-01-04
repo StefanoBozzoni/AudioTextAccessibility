@@ -17,19 +17,21 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/toolbar"
     android:orientation="horizontal"
     android:layout_width="wrap_content"
     android:gravity="center"
     android:layout_gravity="center"
     android:layout_height="wrap_content">
 
-   <ImageView
-       android:id="@+id/btnScan"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:src="@drawable/text_to_speech_40"
-       android:contentDescription="speaker on"
-       android:importantForAccessibility="no"
-       android:tint="@color/red_500" />
+    <ImageView
+        android:id="@+id/btnSpeaker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/text_to_speech_40"
+        android:contentDescription="@string/speaker_on_str"
+        android:importantForAccessibility="no"
+        android:tint="@color/red_500"
+        tools:ignore="UseAppTint" />
 
 </LinearLayout>

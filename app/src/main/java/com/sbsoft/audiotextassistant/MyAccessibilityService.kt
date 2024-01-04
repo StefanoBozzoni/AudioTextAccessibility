@@ -5,27 +5,33 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Gravity
+import android.view.InflateException
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED
+import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
+import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
+import com.sbsoft.audiotextassistant.Utils.findNodeByCoordinates
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
 import java.util.Deque
 import java.util.Locale
-import java.util.concurrent.Executor
 
 
 enum class SpeakerState {
@@ -39,7 +45,7 @@ class MyAccessibilityService : AccessibilityService() {
 
     private lateinit var tts: TextToSpeech
 
-    private var speakerState : SpeakerState = SpeakerState.SPEAKERON
+    private var speakerState: SpeakerState = SpeakerState.SPEAKERON
 
     override fun onServiceConnected() {
 
@@ -62,37 +68,140 @@ class MyAccessibilityService : AccessibilityService() {
         }
 
         // Create an overlay and display the action bar
-        val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        mLayout = FrameLayout(this)
-        val lp = WindowManager.LayoutParams()
-        lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-        lp.format = PixelFormat.TRANSLUCENT
-        lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        lp.width = WindowManager.LayoutParams.WRAP_CONTENT
-        lp.height = WindowManager.LayoutParams.WRAP_CONTENT
-        lp.gravity = Gravity.CENTER
-        val inflater = LayoutInflater.from(this)
-        inflater.inflate(R.layout.action_bar, mLayout)
-        wm.addView(mLayout, lp)
-        setTouchListenerforDragging()
-        configureScanBtn()
+        activateBasicScreen()
     }
 
     private fun configureScanBtn() {
-        val btnScan = mLayout?.findViewById<ImageView>(R.id.btnScan)
-        btnScan?.setOnClickListener {
-            if (btnScan.contentDescription=="speaker on") {
-                btnScan.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.volume_off_40))
-                btnScan.contentDescription = "speaker off"
-                speakerState = SpeakerState.SPEAKEROFF
-                firstTimeSpeakerOff = true
-            } else {
-                btnScan.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.text_to_speech_40))
-                btnScan.contentDescription = "speaker on"
-                speakerState = SpeakerState.SPEAKERON
+        val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
+
+
+        /*
+        btnSpeaker?.setOnClickListener {
+            switchSpeakerOnOff()
+        }
+         */
+
+        btnSpeaker?.setOnLongClickListener {
+            activateOverlayScreen()
+            false
+        }
+
+    }
+
+    private fun switchSpeakerOnOff() {
+        val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
+
+        if (btnSpeaker?.contentDescription == "speaker on") {
+            btnSpeaker.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.volume_off_40))
+            btnSpeaker.contentDescription = "speaker off"
+            speakerState = SpeakerState.SPEAKEROFF
+            firstTimeSpeakerOff = true
+        } else {
+            btnSpeaker?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.text_to_speech_40))
+            btnSpeaker?.contentDescription = "speaker on"
+            speakerState = SpeakerState.SPEAKERON
+        }
+        speakText(btnSpeaker?.contentDescription.toString(), firstTimeSpeakerOff)
+    }
+
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun activateOverlayScreen() {
+        try {
+            val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            wm.removeView(mLayout)
+            mLayout = FrameLayout(this)
+            val inflater = LayoutInflater.from(this)
+            inflater.inflate(R.layout.main_overlay, mLayout)
+            val lp = WindowManager.LayoutParams()
+            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            lp.format = PixelFormat.TRANSLUCENT
+            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT
+            lp.height = WindowManager.LayoutParams.MATCH_PARENT
+            wm.addView(mLayout, lp)
+
+            val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
+
+
+            mainOverlay?.setOnLongClickListener {
+                activateBasicScreen()
+                false
             }
+
+            mainOverlay?.setOnTouchListener { _, event ->
+                // Log the touch coordinates
+                val x = event.x
+                val y = event.y
+
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        // Handle touch down event
+                        val rootNode = this.rootInActiveWindow
+                        val nodefound = findNodeByCoordinates(rootNode, x.toInt(), y.toInt(), mLayout!!)
+                        //Log.d("XDEBUG DOWN", "x=$x, y=$y")
+                        nodefound?.let {
+                            //Log.d("XDEBUG node ", nodefound.toString())
+                            tts.stop()
+                            speakTree(it)
+                        }
+                        false
+                    }
+
+                    MotionEvent.ACTION_MOVE -> {
+                        // Handle touch move event
+                        //Log.d("XDEBUG MOVE", "x=$x, y=$y")
+                        false
+                    }
+
+                    MotionEvent.ACTION_UP -> {
+                        // Handle touch up event
+                        //Log.d("XDEBUG UP", "x=$x, y=$y")
+                        false
+                    }
+
+                    else -> false
+                }
+
+            }
+        } catch (e: InflateException) {
+            Log.e("YourTag", "Error inflating layout: ${e.message}", e)
+        } catch (e: Exception) {
+            Log.e("YourTag", "Exception: ${e.message}", e)
+        }
+
+        speakText("modalità avanzata")
+    }
+
+    private fun activateBasicScreen() {
+        try {
+            val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            if (mLayout != null) {
+                wm.removeView(mLayout)
+                tts.stop()
+                speakText("modalità normale")
+            }
+
+            mLayout = FrameLayout(this)
+            val lp = WindowManager.LayoutParams()
+            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            lp.format = PixelFormat.TRANSLUCENT
+            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            lp.width = WindowManager.LayoutParams.WRAP_CONTENT
+            lp.height = WindowManager.LayoutParams.WRAP_CONTENT
+            lp.gravity = Gravity.CENTER
+            val inflater = LayoutInflater.from(this)
+            inflater.inflate(R.layout.action_bar, mLayout)
+            wm.addView(mLayout, lp)
+            setTouchListenerforDragging()
+            configureScanBtn()
+        } catch (e: InflateException) {
+            Log.e("YourTag", "Error inflating layout: ${e.message}", e)
+        } catch (e: Exception) {
+            Log.e("YourTag", "Exception: ${e.message}", e)
         }
     }
+
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -100,8 +209,10 @@ class MyAccessibilityService : AccessibilityService() {
         event?.let {
             val eventoDescr = AccessibilityEvent.eventTypeToString(it.eventType)
 
-            if (it.eventType==TYPE_VIEW_CLICKED) {
+            if (it.eventType == TYPE_VIEW_CLICKED) {
                 tts.stop()
+                Log.d("XDEBUG", eventoDescr)
+                /*
                 Log.d("XDEBUG", eventoDescr)
                 Log.d("XDEBUG text", it.text.joinToString())
                 Log.d("XDEBUG content descr", it.contentDescription.toString())
@@ -109,7 +220,8 @@ class MyAccessibilityService : AccessibilityService() {
                 Log.d("XDEBUG describecontent", it.describeContents().toString())
                 Log.d("XDEBUG source.text", it.source?.text.toString())
                 Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
-                Log.d("XDEBUG source present", if (it.source!=null) "present" else "not present")
+                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
+                 */
 
                 val testo = it.text.joinToString()
                 if (testo == "Indietro") {
@@ -120,86 +232,44 @@ class MyAccessibilityService : AccessibilityService() {
                     firstTimeSpeakerOff = false
                 } else if (it.source != null) {
                     it.source?.let {
-                        examineTree(it)
+                        speakTree(it)
                     }
                 }
             }
 
-            /*
-            if (it.eventType== TYPE_WINDOW_STATE_CHANGED) {
-                tts.stop()
+            if (it.eventType == TYPE_VIEW_FOCUSED) {
+                val accessibilityManager = getSystemService(AccessibilityManager::class.java)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    accessibilityManager.interrupt()
+                }, 6000)
             }
 
-            if (it.eventType== TYPE_WINDOW_CONTENT_CHANGED) {
-                val node = it.source
-                Log.d("XDEBUG source.classname", (node?.className.toString()))
-                Log.d("XDEBUG source.text", it.source?.text.toString())
-
-
-                // Get the root node of the current window
-                val root = node?.getParent()
-                if (root != null) {
-                    // Get the window title
-                    val windowTitle = root.getText();
-
-                    // Log the window title
-                    Log.d("XDEBUG title3", "Window title: " + windowTitle);
-                }
-
-                if (it.source?.viewIdResourceName == "com.android.systemui:id/clock") return
-                if(node == null || !(node.className.equals("android.view.ViewGroup"))) {
-                    return
-                }
-                Log.d("XDEBUG", eventoDescr)
-                Log.d("XDEBUG text", it.text.joinToString())
-                Log.d("XDEBUG content descr", it.contentDescription.toString())
-                Log.d("XDEBUG before text", it.beforeText.toString())
-                Log.d("XDEBUG describecontent", it.describeContents().toString())
-                Log.d("XDEBUG source.text", it.source?.text.toString())
-                Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
-                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
-                Log.d("XDEBUG resource name", it.source?.viewIdResourceName.toString())
-                Log.d("XDEBUG resource windowId", it.source?.windowId.toString())
-                Log.d("XDEBUG resource visibility", it.source?.isVisibleToUser.toString())
-                val testo = it.source?.text.toString()
-                if ((testo.isNotEmpty() && testo!="null") && (it.source?.isVisibleToUser == true) && it.source!=rootNode) {
-                    //speakText(testo)
-                    root?.let {
-                        examineTree(it)
-                    }
-                    firstTimeSpeakerOff = false
-                }
-            */
-            Log.d("XDEBUG event type", eventoDescr)
+            Log.d("XDEBUG", eventoDescr)
         }
     }
-
 
     private fun speakText(testo: String, overrideCheck: Boolean = false) {
-        if (testo!="null" && (speakerState == SpeakerState.SPEAKERON || overrideCheck)) {
-            tts.speak(testo,
+        if (testo != "null" && (speakerState == SpeakerState.SPEAKERON || overrideCheck)) {
+            tts.speak(
+                testo,
                 TextToSpeech.QUEUE_ADD,
                 null,
-                null)
+                null
+            )
         }
-    }
-
-    override fun takeScreenshot(displayId: Int, executor: Executor, callback: TakeScreenshotCallback) {
-        super.takeScreenshot(displayId, executor, callback)
-        Log.d("XDEBUG screenshot","")
     }
 
     override fun onSystemActionsChanged() {
         super.onSystemActionsChanged()
-        Log.d("XDEBUG Action changed","")
+        //Log.d("XDEBUG Action changed", "")
     }
 
-    private fun examineTree(root: AccessibilityNodeInfo) {
+    private fun speakTree(root: AccessibilityNodeInfo) {
         val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
         deque.add(root)
         while (!deque.isEmpty()) {
             val node = deque.removeFirst()
-            Log.d("XDEBUG text", node.className.toString()+" / "+ node.text.toString()+" / "+'/'+node.contentDescription+"/"+node.isClickable+"/"+node.isContextClickable)
+            //Log.d("XDEBUG text", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
             if (node.isClickable && node?.contentDescription.toString().isNotEmpty()) {
                 speakText(node?.contentDescription.toString())
             } else {
@@ -214,7 +284,6 @@ class MyAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        //TODO("Not yet implemented")
     }
 
     override fun onDestroy() {
@@ -235,7 +304,7 @@ class MyAccessibilityService : AccessibilityService() {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.CENTER
-        val btnScan = mLayout?.findViewById<ImageView>(R.id.btnScan)
+        val btnScan = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
 
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
@@ -254,7 +323,7 @@ class MyAccessibilityService : AccessibilityService() {
                         initialTouchX = event.rawX
                         initialTouchY = event.rawY
                         moved = false
-                        return true
+                        return false
                     }
 
                     MotionEvent.ACTION_MOVE -> {
@@ -269,8 +338,10 @@ class MyAccessibilityService : AccessibilityService() {
                         // Perform a click action when the touch is released
                         if (!moved) {
                             v.post {
+                                switchSpeakerOnOff()
                                 v.performClick()
                             }
+
                             return false
                         } else
                             return true
