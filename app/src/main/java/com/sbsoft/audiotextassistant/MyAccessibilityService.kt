@@ -4,7 +4,10 @@ import android.accessibilityservice.AccessibilityService
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Gravity
@@ -145,10 +148,11 @@ class MyAccessibilityService : AccessibilityService() {
                         // Handle touch down event
                         val rootNode = this.rootInActiveWindow
                         val nodefound = findNodeByCoordinates(rootNode, x.toInt(), y.toInt(), mLayout!!)
-                        //Log.d("XDEBUG DOWN", "x=$x, y=$y")
+                        Log.d("XDEBUG DOWN", "x=$x, y=$y")
                         nodefound?.let {
-                            //Log.d("XDEBUG node ", nodefound.toString())
+                            Log.d("XDEBUG node ", nodefound.toString())
                             tts.stop()
+                            Log.d("XDEBUG node parent", nodefound.parent.toString())
                             speakTree(it.parent)
                         }
                         false
@@ -247,8 +251,11 @@ class MyAccessibilityService : AccessibilityService() {
             if (it.eventType == TYPE_VIEW_FOCUSED) {
                 val rootNode = rootInActiveWindow
                 if (rootNode != null) {
-                    rootNode.getChild(0).performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        rootNode?.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                    }, 1000)
                 }
+                //printTree(rootNode)
             }
 
             Log.d("XDEBUG", eventoDescr)
@@ -278,8 +285,15 @@ class MyAccessibilityService : AccessibilityService() {
             val node = deque.removeFirst()
             Log.d("XDEBUG text", node.toString())
             Log.d("XDEBUG text", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
-            if (node.isClickable && node?.contentDescription.toString().isNotEmpty()) {
+            val contentDescription = node?.contentDescription.toString()
+
+            val boundsinScreen = Rect()
+            node.getBoundsInScreen(boundsinScreen)
+            val isAdvertiseButton = ((boundsinScreen.top < 0) || (boundsinScreen.left < 0) || boundsinScreen.right < 0 || boundsinScreen.bottom < 0)
+
+            if (node.isClickable && contentDescription.isNotEmpty() && contentDescription != "null" && !isAdvertiseButton) {
                 speakText(node?.contentDescription.toString())
+                Log.d("XDEBUG isClickable", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
             } else {
                 if (node.isVisibleToUser) {
                     speakText(node?.text.toString())
