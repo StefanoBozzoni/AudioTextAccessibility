@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.view.Gravity
@@ -102,6 +104,7 @@ class MyAccessibilityService : AccessibilityService() {
 
             if (it.eventType==TYPE_VIEW_CLICKED) {
                 tts.stop()
+                /*
                 Log.d("XDEBUG", eventoDescr)
                 Log.d("XDEBUG text", it.text.joinToString())
                 Log.d("XDEBUG content descr", it.contentDescription.toString())
@@ -110,6 +113,7 @@ class MyAccessibilityService : AccessibilityService() {
                 Log.d("XDEBUG source.text", it.source?.text.toString())
                 Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
                 Log.d("XDEBUG source present", if (it.source!=null) "present" else "not present")
+                 */
 
                 val testo = it.text.joinToString()
                 if (testo == "Indietro") {
@@ -125,51 +129,14 @@ class MyAccessibilityService : AccessibilityService() {
                 }
             }
 
-            /*
-            if (it.eventType== TYPE_WINDOW_STATE_CHANGED) {
-                tts.stop()
+            if (it.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
+                val rootNode = rootInActiveWindow
+                if (rootNode != null) {
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        rootNode?.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                    }, 1000)
+                }
             }
-
-            if (it.eventType== TYPE_WINDOW_CONTENT_CHANGED) {
-                val node = it.source
-                Log.d("XDEBUG source.classname", (node?.className.toString()))
-                Log.d("XDEBUG source.text", it.source?.text.toString())
-
-
-                // Get the root node of the current window
-                val root = node?.getParent()
-                if (root != null) {
-                    // Get the window title
-                    val windowTitle = root.getText();
-
-                    // Log the window title
-                    Log.d("XDEBUG title3", "Window title: " + windowTitle);
-                }
-
-                if (it.source?.viewIdResourceName == "com.android.systemui:id/clock") return
-                if(node == null || !(node.className.equals("android.view.ViewGroup"))) {
-                    return
-                }
-                Log.d("XDEBUG", eventoDescr)
-                Log.d("XDEBUG text", it.text.joinToString())
-                Log.d("XDEBUG content descr", it.contentDescription.toString())
-                Log.d("XDEBUG before text", it.beforeText.toString())
-                Log.d("XDEBUG describecontent", it.describeContents().toString())
-                Log.d("XDEBUG source.text", it.source?.text.toString())
-                Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
-                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
-                Log.d("XDEBUG resource name", it.source?.viewIdResourceName.toString())
-                Log.d("XDEBUG resource windowId", it.source?.windowId.toString())
-                Log.d("XDEBUG resource visibility", it.source?.isVisibleToUser.toString())
-                val testo = it.source?.text.toString()
-                if ((testo.isNotEmpty() && testo!="null") && (it.source?.isVisibleToUser == true) && it.source!=rootNode) {
-                    //speakText(testo)
-                    root?.let {
-                        examineTree(it)
-                    }
-                    firstTimeSpeakerOff = false
-                }
-            */
             Log.d("XDEBUG event type", eventoDescr)
         }
     }
