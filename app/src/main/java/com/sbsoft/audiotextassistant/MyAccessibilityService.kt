@@ -78,6 +78,14 @@ class MyAccessibilityService : AccessibilityService() {
         wm.addView(mLayout, lp)
         setTouchListenerforDragging()
         configureScanBtn()
+
+        val rootNode = rootInActiveWindow
+        if (rootNode != null) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                rootNode.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+            }, 1000)
+        }
+
     }
 
     private fun configureScanBtn() {
