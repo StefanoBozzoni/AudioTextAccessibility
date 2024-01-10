@@ -12,6 +12,7 @@ android {
         applicationId = "com.sbsoft.audiotextassistant"
         minSdk = 24
         targetSdk = 34
+        compileSdk = 34
         versionCode = 102
         versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
