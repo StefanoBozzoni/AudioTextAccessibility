@@ -28,10 +28,9 @@
         android:id="@+id/btnSpeaker"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/text_to_speech_40"
+        android:src="@drawable/text_to_speech_new"
         android:contentDescription="@string/speaker_on_str"
         android:importantForAccessibility="no"
-        android:tint="@color/red_500"
         tools:ignore="UseAppTint" />
 
 </LinearLayout>

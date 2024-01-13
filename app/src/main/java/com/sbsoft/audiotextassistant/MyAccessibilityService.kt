@@ -313,6 +313,20 @@ class MyAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun checkFocusable(root: AccessibilityNodeInfo): Boolean {
+        val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
+        deque.add(root)
+        while (!deque.isEmpty()) {
+            val node = deque.removeFirst()
+            if (node.isAccessibilityFocused) return true
+            for (i in 0 until node.childCount) {
+                if ((node != null) && (node.getChild(i) != null)) deque.addLast(node.getChild(i))
+            }
+        }
+        return false
+    }
+
+
     override fun onInterrupt() {
     }
 
