@@ -113,7 +113,7 @@ class MyAccessibilityService : AccessibilityService() {
             speakerState = SpeakerState.SPEAKEROFF
             firstTimeSpeakerOff = true
         } else {
-            btnSpeaker?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.text_to_speech_40))
+            btnSpeaker?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.text_to_speech_new))
             btnSpeaker?.contentDescription = "speaker on"
             speakerState = SpeakerState.SPEAKERON
         }
