@@ -242,17 +242,6 @@ class MyAccessibilityService : AccessibilityService() {
 
             if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
                 tts.stop()
-                Log.d("XDEBUG", eventoDescr)
-                /*
-                Log.d("XDEBUG", eventoDescr)
-                Log.d("XDEBUG text", it.text.joinToString())
-                Log.d("XDEBUG content descr", it.contentDescription.toString())
-                Log.d("XDEBUG before text", it.beforeText.toString())
-                Log.d("XDEBUG describecontent", it.describeContents().toString())
-                Log.d("XDEBUG source.text", it.source?.text.toString())
-                Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
-                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
-                 */
 
                 val testo = it.text.joinToString()
                 if (testo == "Indietro") {
@@ -272,7 +261,7 @@ class MyAccessibilityService : AccessibilityService() {
                 val rootNode = rootInActiveWindow
                 if (rootNode != null) {
                     Handler(Looper.getMainLooper()).postDelayed({
-                        rootNode?.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                        rootNode.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
                     }, 1000)
                 }
                 //printTree(rootNode)
