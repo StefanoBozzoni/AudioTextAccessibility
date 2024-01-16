@@ -6,10 +6,13 @@ import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.GestureDetector
+import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.Gravity
 import android.view.InflateException
 import android.view.LayoutInflater
@@ -26,12 +29,15 @@ import android.widget.ImageView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
-import com.sbsoft.audiotextassistant.Utils.findNodeByCoordinates
+import com.sbsoft.audiotextassistant.Utils.findScrollableNodeByCoordinates
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
 import java.util.Deque
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 
 enum class SpeakerState {
@@ -46,13 +52,46 @@ enum class Mode {
 
 class MyAccessibilityService : AccessibilityService() {
     private var firstTimeSpeakerOff: Boolean = false
+    private var scrollableNode: AccessibilityNodeInfo? = null
     var mLayout: FrameLayout? = null
     private lateinit var tts: TextToSpeech
     private var speakerState: SpeakerState = SpeakerState.SPEAKERON
     private lateinit var mode: Mode
     private var moved: Boolean = false
+    private lateinit var gestureDetector: GestureDetector
 
     override fun onServiceConnected() {
+
+        gestureDetector = GestureDetector(this, object : SimpleOnGestureListener() {
+
+            override fun onDown(e: MotionEvent): Boolean {
+                val rootNode = rootInActiveWindow
+                scrollableNode = findScrollableNodeByCoordinates(rootNode, e.x.toInt(), e.y.toInt(), mLayout!!)
+                Log.d("XDEBUG scrollable", scrollableNode?.className.toString())
+                return true
+            }
+
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                Log.d("XDEBUG", "Fling")
+                /*
+                e1?.let {
+                    val swipeDirection: Int = getSwipeDirection(it, e2)
+                    handleSwipe(swipeDirection)
+                }
+                */
+                return true
+            }
+
+            override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+                super.onScroll(e1, e2, distanceX, distanceY)
+                e1?.let {
+                    val swipeDirection: Int = getSwipeDirection(e1, e2)
+                    handleSwipe(swipeDirection)
+                }
+                Log.d("XDEBUG", "Scroll")
+                return false
+            }
+        })
 
         mode = Mode.NORMAL
         val sdf = SimpleDateFormat("dd-MM-yyyy hh:mm:ss", Locale.ITALIAN)
@@ -140,12 +179,16 @@ class MyAccessibilityService : AccessibilityService() {
 
             val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
 
-
+            /*
             mainOverlay?.setOnLongClickListener {
                 activateBasicScreen()
                 false
             }
 
+             */
+
+            mainOverlay?.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
+            /*
             mainOverlay?.setOnTouchListener { _, event ->
                 // Log the touch coordinates
                 val x = event.x
@@ -182,6 +225,9 @@ class MyAccessibilityService : AccessibilityService() {
                 }
 
             }
+           */
+
+
         } catch (e: InflateException) {
             Log.e("YourTag", "Error inflating layout: ${e.message}", e)
         } catch (e: Exception) {
@@ -189,6 +235,79 @@ class MyAccessibilityService : AccessibilityService() {
         }
 
         speakText("modalità avanzata")
+    }
+
+    fun getSwipeDirection(e1: MotionEvent, e2: MotionEvent): Int {
+        val x1 = e1.x
+        val x2 = e2.x
+        val y1 = e1.y
+        val y2 = e2.y
+        val deltaX = x2 - x1
+        val deltaY = y2 - y1
+
+        // Calculate the magnitude of the swipe
+        val magnitude = sqrt(deltaX.toDouble().pow(2.0) + deltaY.toDouble().pow(2.0))
+
+        // Check if the swipe magnitude is greater than the threshold
+        if (magnitude > SWIPE_THRESHOLD) {
+            // Determine the direction based on the x and y change
+            return if (abs(deltaX) > abs(deltaY)) {
+                // Horizontal swipe
+                if (deltaX > 0) {
+                    SWIPE_RIGHT
+                } else {
+                    SWIPE_LEFT
+                }
+            } else {
+                // Vertical swipe
+                if (deltaY > 0) {
+                    SWIPE_DOWN
+                } else {
+                    SWIPE_UP
+                }
+            }
+        }
+
+        return SWIPE_NONE
+    }
+
+    fun handleSwipe(swipeDirection: Int) {
+        when (swipeDirection) {
+
+
+            SWIPE_RIGHT -> {
+                // Handle swipe to the right
+                Log.d("XDEBUG", "SWIPE RIGHT")
+            }
+
+            SWIPE_LEFT -> {
+                // Handle swipe to the left
+                Log.d("XDEBUG", "SWIPE LEFT")
+            }
+
+            SWIPE_UP -> {
+                // Handle swipe up
+                Log.d("XDEBUG", "SWIPE UP")
+                val arguments = Bundle()
+                arguments.putInt("scrollAmount", 50)
+                arguments.putFloat("velocity", 10f)
+                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments);
+            }
+
+            SWIPE_DOWN -> {
+                // Handle swipe down
+                Log.d("XDEBUG", "SWIPE DOWN")
+                val scrollNode = rootInActiveWindow
+                val arguments = Bundle()
+
+                arguments.putInt("scrollAmount", -50)
+                arguments.putFloat("velocity", 10f)
+                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments);
+
+
+            }
+        }
+
     }
 
     private fun activateBasicScreen() {
@@ -249,24 +368,25 @@ class MyAccessibilityService : AccessibilityService() {
                 if (testo.isNotEmpty() && testo.lowercase() != "null") {
                     speakText(testo, speakerState == SpeakerState.SPEAKEROFF && (firstTimeSpeakerOff == true))
                     firstTimeSpeakerOff = false
-                } else if (it.source != null) {
-                    it.source?.let {
-                        speakTree(it)
+                } else
+                    if (it.source != null) {
+                        it.source?.let { node ->
+                            speakTree(node)
+                        }
                     }
-                }
             }
 
             if (it.eventType == TYPE_VIEW_FOCUSED) {
                 val rootNode = rootInActiveWindow
                 if (rootNode != null) {
                     Handler(Looper.getMainLooper()).postDelayed({
-                        rootNode?.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                        rootNode.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
                     }, 1000)
                 }
                 //printTree(rootNode)
             }
 
-            Log.d("XDEBUG", eventoDescr)
+            Log.d("XDEBUG", "$eventoDescr ${it.eventType}")
         }
     }
 
@@ -377,22 +497,35 @@ class MyAccessibilityService : AccessibilityService() {
                     }
                     MotionEvent.ACTION_UP -> {
                         // Perform a click action when the touch is released
-                        if (!moved) {
+                        return if (!moved) {
                             v.post {
                                 switchSpeakerOnOff()
                                 //v.performClick()
                             }
-                            return false
+                            false
                         } else {
                             moved = false
-                            return true
+                            true
                         }
                     }
-                    else -> return false
+
+                    else -> {
+                        return false
+                    }
                 }
             }
         }
         )
+
+    }
+
+    companion object {
+        const val SWIPE_RIGHT = 1
+        const val SWIPE_LEFT = -1
+        const val SWIPE_UP = -2
+        const val SWIPE_DOWN = 2
+        const val SWIPE_NONE = 0
+        const val SWIPE_THRESHOLD = 100f
 
     }
 }
