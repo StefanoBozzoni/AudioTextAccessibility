@@ -228,6 +228,18 @@ class MyAccessibilityService : AccessibilityService() {
         event?.let {
             val eventoDescr = AccessibilityEvent.eventTypeToString(it.eventType)
 
+            if (it.eventType == TYPE_VIEW_CLICKED) {
+                Log.d("XDEBUG", event.text.toString())
+                Log.d("XDEBUG", eventoDescr)
+                Log.d("XDEBUG text", it.text.joinToString())
+                Log.d("XDEBUG content descr", it.contentDescription.toString())
+                Log.d("XDEBUG before text", it.beforeText.toString())
+                Log.d("XDEBUG describecontent", it.describeContents().toString())
+                Log.d("XDEBUG source.text", it.source?.text.toString())
+                Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
+                Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
+            }
+
             if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
                 tts.stop()
                 Log.d("XDEBUG", eventoDescr)
