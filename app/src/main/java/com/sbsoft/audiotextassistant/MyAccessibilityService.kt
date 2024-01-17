@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +14,7 @@ import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
 import android.view.Gravity
 import android.view.InflateException
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -23,13 +23,15 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED
 import android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
+import android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
+import com.sbsoft.audiotextassistant.Utils.findNodeByCoordinates
 import com.sbsoft.audiotextassistant.Utils.findScrollableNodeByCoordinates
+import com.sbsoft.audiotextassistant.Utils.screenMetrics
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
@@ -65,32 +67,67 @@ class MyAccessibilityService : AccessibilityService() {
         gestureDetector = GestureDetector(this, object : SimpleOnGestureListener() {
 
             override fun onDown(e: MotionEvent): Boolean {
-                val rootNode = rootInActiveWindow
-                scrollableNode = findScrollableNodeByCoordinates(rootNode, e.x.toInt(), e.y.toInt(), mLayout!!)
-                Log.d("XDEBUG scrollable", scrollableNode?.className.toString())
+                //printTree(rootInActiveWindow)
                 return true
             }
 
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 Log.d("XDEBUG", "Fling")
-                /*
+
                 e1?.let {
                     val swipeDirection: Int = getSwipeDirection(it, e2)
+                    val rootNode = rootInActiveWindow
+                    //printTree(rootNode)
+                    scrollableNode = findScrollableNodeByCoordinates(rootNode, e1.x.toInt(), e1.y.toInt(), mLayout!!)
+                    Log.d("XDEBUG scrollable", scrollableNode?.toString().orEmpty())
+                    //check the window if it is scrollabeVertically or Horizontally
                     handleSwipe(swipeDirection)
                 }
-                */
+
                 return true
             }
 
             override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
                 super.onScroll(e1, e2, distanceX, distanceY)
                 e1?.let {
-                    val swipeDirection: Int = getSwipeDirection(e1, e2)
-                    handleSwipe(swipeDirection)
+                    //val swipeDirection: Int = getSwipeDirection(e1, e2)
+                    //handleSwipe(swipeDirection)
                 }
                 Log.d("XDEBUG", "Scroll")
                 return false
             }
+
+            override fun onLongPress(e: MotionEvent) {
+                activateBasicScreen()
+            }
+
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                val nodefound = findNodeByCoordinates(rootInActiveWindow, e.x.toInt(), e.y.toInt(), mLayout!!)
+
+                Log.d("XDEBUG DOWN", "x=${e.x.toInt()}, y=${e.y.toInt()}")
+                nodefound?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+
+                if (nodefound != null) {
+                    val windowId = nodefound.windowId
+                    Log.d("XDEBUG windows id", "windows ID=${windowId}")
+                    // Use the windowId to perform desired action
+                }
+
+                /*
+                val source = findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+                val source = nodefound?.refresh()
+                Log.d("XDEBUG name", nodefound?.viewIdResourceName.toString())
+                */
+                Log.d("XDEBUG name", nodefound?.viewIdResourceName.toString())
+                nodefound?.let {
+                    tts.stop()
+                    Log.d("XDEBUG node ", nodefound.toString())
+                    Log.d("XDEBUG node parent", nodefound.parent.toString())
+                    speakTree(it)
+                }
+                return false
+            }
+
         })
 
         mode = Mode.NORMAL
@@ -127,13 +164,6 @@ class MyAccessibilityService : AccessibilityService() {
     private fun configureScanBtn() {
         val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
 
-
-        /*
-        btnSpeaker?.setOnClickListener {
-            switchSpeakerOnOff()
-        }
-         */
-
         btnSpeaker?.setOnLongClickListener {
             if (!moved) {
                 activateOverlayScreen()
@@ -159,7 +189,6 @@ class MyAccessibilityService : AccessibilityService() {
         speakText(btnSpeaker?.contentDescription.toString(), firstTimeSpeakerOff)
     }
 
-
     @SuppressLint("ClickableViewAccessibility")
     private fun activateOverlayScreen() {
         mode = Mode.ADVANCED
@@ -175,58 +204,67 @@ class MyAccessibilityService : AccessibilityService() {
             lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             lp.width = WindowManager.LayoutParams.MATCH_PARENT
             lp.height = WindowManager.LayoutParams.MATCH_PARENT
-            wm.addView(mLayout, lp)
-
-            val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
+            lp.gravity = Gravity.TOP
 
             /*
-            mainOverlay?.setOnLongClickListener {
-                activateBasicScreen()
-                false
+            if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+                mLayout?.setOnApplyWindowInsetsListener { _, insets ->
+                    // Access insets properties such as systemGestureInsets
+                    val systemGestureInsets = insets.getInsets(WindowInsets.Type.systemBars())
+                    val (screenWidth, screenHeight) = screenMetrics(this)
+                    val layoutParams = mLayout?.layoutParams
+                    layoutParams?.width = screenWidth.minus(systemGestureInsets.left + systemGestureInsets.right)
+                    layoutParams?.height = screenHeight.minus(systemGestureInsets.top + systemGestureInsets.bottom) + 30
+                    mLayout?.layoutParams = layoutParams
+                    wm.updateViewLayout(mLayout, layoutParams)
+                    // Return the insets after handling
+                    insets
+                }
+            } else {
+                ViewCompat.setOnApplyWindowInsetsListener(mLayout!!) { _, insets ->
+                    @Suppress("DEPRECATION")
+                    val systemWindowInsets = insets.systemWindowInsets
+                    val (screenWidth, screenHeight) = screenMetrics(this)
+                    val layoutParams = mLayout?.layoutParams
+                    Log.d("XDEBUG insets bottom", systemWindowInsets.bottom.toString())
+                    layoutParams?.width = screenWidth.minus(systemWindowInsets.left + systemWindowInsets.right)
+                    layoutParams?.height = screenHeight.minus(systemWindowInsets.top + systemWindowInsets.bottom+30)
+                    mLayout?.layoutParams = layoutParams
+                    wm.updateViewLayout(mLayout, layoutParams)
+                    // Return the insets after handling
+                    insets
+                }
             }
 
              */
 
+            val (screenWidth, screenHeight) = screenMetrics(this)
+            // Listen for window insets changes and adjust the layou
+            wm.addView(mLayout, lp)
+            val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
             mainOverlay?.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
+
             /*
-            mainOverlay?.setOnTouchListener { _, event ->
-                // Log the touch coordinates
-                val x = event.x
-                val y = event.y
+            val windowsInsets = ViewCompat.getRootWindowInsets(mLayout!!)
+            Log.d("XDEBUG insets", windowsInsets?.stableInsets?.bottom.toString())
 
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        // Handle touch down event
-                        val rootNode = this.rootInActiveWindow
-                        val nodefound = findNodeByCoordinates(rootNode, x.toInt(), y.toInt(), mLayout!!)
-                        Log.d("XDEBUG DOWN", "x=$x, y=$y")
-                        nodefound?.let {
-                            Log.d("XDEBUG node ", nodefound.toString())
-                            tts.stop()
-                            Log.d("XDEBUG node parent", nodefound.parent.toString())
-                            speakTree(it.parent)
-                        }
-                        false
+            val rectInsets = getStableInsets(mLayout!!.rootView)
+            Log.d("XDEBUG insets", rectInsets.bottom.toString())
+
+            mLayout?.viewTreeObserver?.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    // Called when the layout is about to be drawn
+                    val insets = mLayout!!.rootView.rootWindowInsets
+                    if (insets != null) {
+                        Log.d("XDEBUG insets", "QUI NON E' NULL!!")
+                        val rectInsets2 = getStableInsets(mLayout!!.rootView)
+                        Log.d("XDEBUG insets", rectInsets2.bottom.toString())
                     }
-
-                    MotionEvent.ACTION_MOVE -> {
-                        // Handle touch move event
-                        //Log.d("XDEBUG MOVE", "x=$x, y=$y")
-                        false
-                    }
-
-                    MotionEvent.ACTION_UP -> {
-                        // Handle touch up event
-                        //Log.d("XDEBUG UP", "x=$x, y=$y")
-                        false
-                    }
-
-                    else -> false
+                    // Return true to proceed with the drawing, false to cancel
+                    return true
                 }
-
-            }
-           */
-
+            })
+            */
 
         } catch (e: InflateException) {
             Log.e("YourTag", "Error inflating layout: ${e.message}", e)
@@ -289,9 +327,11 @@ class MyAccessibilityService : AccessibilityService() {
                 // Handle swipe up
                 Log.d("XDEBUG", "SWIPE UP")
                 val arguments = Bundle()
-                arguments.putInt("scrollAmount", 50)
-                arguments.putFloat("velocity", 10f)
-                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments);
+                //arguments.putInt("scrollAmount", 0)
+                //arguments.putFloat("velocity", 0.01f)
+                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments)
+
+
             }
 
             SWIPE_DOWN -> {
@@ -300,11 +340,11 @@ class MyAccessibilityService : AccessibilityService() {
                 val scrollNode = rootInActiveWindow
                 val arguments = Bundle()
 
-                arguments.putInt("scrollAmount", -50)
-                arguments.putFloat("velocity", 10f)
-                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments);
+                //arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVE_WINDOW_Y, 1)
+                //arguments.putFloat("velocity", 0.1f)
 
-
+                //arguments.putFloat(AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN, -0.1f)
+                scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD, arguments);
             }
         }
 
@@ -341,17 +381,34 @@ class MyAccessibilityService : AccessibilityService() {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.R)
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        // Get the root node of the active window
+        val root = getRootInActiveWindow()
+
+        Log.d("XDEBUG keycode", event.keyCode.toString())
+        // Find the focused button
+        val button = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        // If the button is not null and the event is the ENTER key event
+        if (button != null && event.keyCode == KeyEvent.KEYCODE_ENTER) {
+            // Perform a click on the button
+            button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            // Tell the system that the accessibility service is handling the key event
+            //event.setSource()
+            // Return true to indicate that the event has been handled
+            return true
+        }
+        // Return false to indicate that the event has not been handled
+        return super.onKeyEvent(event)
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        //TODO("Not yet implemented")
         event?.let {
             val eventoDescr = AccessibilityEvent.eventTypeToString(it.eventType)
-
-            if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
-                tts.stop()
+            if (it.eventType == TYPE_VIEW_CLICKED && it.eventType != TYPE_WINDOW_CONTENT_CHANGED) {
                 Log.d("XDEBUG", eventoDescr)
-                /*
-                Log.d("XDEBUG", eventoDescr)
+                Log.d("XDEBUG", it.source?.className.toString())
+                Log.d("XDEBUG", it.source?.viewIdResourceName.toString())
+                Log.d("XDEBUG window", it.source?.windowId.toString())
                 Log.d("XDEBUG text", it.text.joinToString())
                 Log.d("XDEBUG content descr", it.contentDescription.toString())
                 Log.d("XDEBUG before text", it.beforeText.toString())
@@ -359,7 +416,18 @@ class MyAccessibilityService : AccessibilityService() {
                 Log.d("XDEBUG source.text", it.source?.text.toString())
                 Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
                 Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
-                 */
+            }
+
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
+                val textView = event.source
+                val updatedText = textView?.text.toString()
+                Log.d("XDEBUG typed text", updatedText)
+                // Handle the changed text
+            }
+
+            if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
+                tts.stop()
+                Log.d("XDEBUG", eventoDescr)
 
                 val testo = it.text.joinToString()
                 if (testo == "Indietro") {
@@ -386,7 +454,9 @@ class MyAccessibilityService : AccessibilityService() {
                 //printTree(rootNode)
             }
 
-            Log.d("XDEBUG", "$eventoDescr ${it.eventType}")
+            if (it.eventType != TYPE_WINDOW_CONTENT_CHANGED) {
+                Log.d("XDEBUG", "$eventoDescr ${it.eventType}")
+            }
         }
     }
 
@@ -432,20 +502,6 @@ class MyAccessibilityService : AccessibilityService() {
             }
         }
     }
-
-    private fun checkFocusable(root: AccessibilityNodeInfo): Boolean {
-        val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
-        deque.add(root)
-        while (!deque.isEmpty()) {
-            val node = deque.removeFirst()
-            if (node.isAccessibilityFocused) return true
-            for (i in 0 until node.childCount) {
-                if ((node != null) && (node.getChild(i) != null)) deque.addLast(node.getChild(i))
-            }
-        }
-        return false
-    }
-
 
     override fun onInterrupt() {
     }
