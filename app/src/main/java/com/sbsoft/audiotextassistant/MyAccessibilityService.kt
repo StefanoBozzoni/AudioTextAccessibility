@@ -27,6 +27,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
 import com.sbsoft.audiotextassistant.Utils.findNodeByCoordinates
+import com.sbsoft.audiotextassistant.Utils.printTree
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
@@ -238,6 +239,8 @@ class MyAccessibilityService : AccessibilityService() {
                 Log.d("XDEBUG source.text", it.source?.text.toString())
                 Log.d("XDEBUG source.conent", it.source?.contentDescription.toString())
                 Log.d("XDEBUG source present", if (it.source != null) "present" else "not present")
+                Log.d("XDEBUG source content", it.source.toString())
+                printTree(rootInActiveWindow)
             }
 
             if (it.eventType == TYPE_VIEW_CLICKED && (mode != Mode.ADVANCED)) {
