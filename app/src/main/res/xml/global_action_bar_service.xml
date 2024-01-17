@@ -21,7 +21,7 @@
     android:name=".MyAccessibilityService"
     android:label="AudioText Assistant"
     android:accessibilityFeedbackType="feedbackSpoken"
-    android:accessibilityFlags="flagIncludeNotImportantViews|flagDefault|flagRequestShortcutWarningDialogSpokenFeedback|flagRetrieveInteractiveWindows"
+    android:accessibilityFlags="flagRequestFilterKeyEvents|flagIncludeNotImportantViews|flagDefault|flagRequestShortcutWarningDialogSpokenFeedback|flagRetrieveInteractiveWindows|flagReportViewIds"
     android:canPerformGestures="true"
     android:notificationTimeout="0"
     android:isAccessibilityTool="true"
@@ -29,4 +29,5 @@
     android:description="@string/info_service_short"
     android:accessibilityEventTypes="typeAllMask"
     android:canRetrieveWindowContent="true"
+    android:canRequestFilterKeyEvents="true"
     tools:targetApi="s" />
