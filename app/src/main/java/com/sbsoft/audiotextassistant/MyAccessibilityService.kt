@@ -17,7 +17,6 @@ import android.view.InflateException
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
-import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -59,12 +58,16 @@ class MyAccessibilityService : AccessibilityService() {
     private lateinit var tts: TextToSpeech
     private var speakerState: SpeakerState = SpeakerState.SPEAKERON
     private lateinit var mode: Mode
-    private var moved: Boolean = false
-    private lateinit var gestureDetector: GestureDetector
+    private lateinit var gestureDetectorAdvancedMode: GestureDetector
+    private lateinit var gestureDetectorBasicMode: GestureDetector
+
+    val listenerBasicMode = basicModeGestureListener
 
     override fun onServiceConnected() {
 
-        gestureDetector = GestureDetector(this, object : SimpleOnGestureListener() {
+        gestureDetectorBasicMode = GestureDetector(this, listenerBasicMode)
+
+        gestureDetectorAdvancedMode = GestureDetector(this, object : SimpleOnGestureListener() {
 
             override fun onDown(e: MotionEvent): Boolean {
                 //printTree(rootInActiveWindow)
@@ -101,7 +104,7 @@ class MyAccessibilityService : AccessibilityService() {
                 activateBasicScreen()
             }
 
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
                 val nodefound = findNodeByCoordinates(rootInActiveWindow, e.x.toInt(), e.y.toInt(), mLayout!!)
 
                 Log.d("XDEBUG DOWN", "x=${e.x.toInt()}, y=${e.y.toInt()}")
@@ -157,18 +160,6 @@ class MyAccessibilityService : AccessibilityService() {
             Handler(Looper.getMainLooper()).postDelayed({
                 rootNode.getChild(0)?.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
             }, 1000)
-        }
-
-    }
-
-    private fun configureScanBtn() {
-        val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
-
-        btnSpeaker?.setOnLongClickListener {
-            if (!moved) {
-                activateOverlayScreen()
-            }
-            false
         }
 
     }
@@ -242,7 +233,7 @@ class MyAccessibilityService : AccessibilityService() {
             // Listen for window insets changes and adjust the layou
             wm.addView(mLayout, lp)
             val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
-            mainOverlay?.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
+            mainOverlay?.setOnTouchListener { _, event -> gestureDetectorAdvancedMode.onTouchEvent(event) }
 
             /*
             val windowsInsets = ViewCompat.getRootWindowInsets(mLayout!!)
@@ -372,7 +363,7 @@ class MyAccessibilityService : AccessibilityService() {
             inflater.inflate(R.layout.action_bar, mLayout)
             wm.addView(mLayout, lp)
             setTouchListenerforDragging()
-            configureScanBtn()
+            //configureScanBtn()
         } catch (e: InflateException) {
             Log.e("YourTag", "Error inflating layout: ${e.message}", e)
         } catch (e: Exception) {
@@ -462,10 +453,12 @@ class MyAccessibilityService : AccessibilityService() {
 
     private fun speakText(testo: String, overrideCheck: Boolean = false) {
         if (testo != "null" && (speakerState == SpeakerState.SPEAKERON || overrideCheck)) {
+            val params = Bundle()
+            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
             tts.speak(
                 testo,
                 TextToSpeech.QUEUE_ADD,
-                null,
+                STREAM_MUSIC_PARAM,
                 null
             )
         }
@@ -527,7 +520,27 @@ class MyAccessibilityService : AccessibilityService() {
         val btnSpeaker = mLayout?.findViewById<ImageView>(R.id.btnSpeaker)
 
         val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        listenerBasicMode.setListenerParam(params, object : ILayoutUpdater {
+            override fun onUpdateLayout(params: WindowManager.LayoutParams) {
+                windowManager.updateViewLayout(mLayout, params)
+            }
 
+            override fun onSpeakerOnOff() {
+                mLayout?.post {
+                    tts.stop()
+                    switchSpeakerOnOff()
+                }
+            }
+
+            override fun onActivateAdvancedMode() {
+                activateOverlayScreen()
+            }
+
+        })
+
+        btnSpeaker?.setOnTouchListener { view, event -> gestureDetectorBasicMode.onTouchEvent(event) }
+
+        /*
         btnSpeaker?.setOnTouchListener(object : View.OnTouchListener {
             private var initialX: Int = 0
             private var initialY: Int = 0
@@ -572,6 +585,7 @@ class MyAccessibilityService : AccessibilityService() {
             }
         }
         )
+         */
 
     }
 
@@ -582,6 +596,10 @@ class MyAccessibilityService : AccessibilityService() {
         const val SWIPE_DOWN = 2
         const val SWIPE_NONE = 0
         const val SWIPE_THRESHOLD = 100f
+
+        val STREAM_MUSIC_PARAM = Bundle().apply {
+            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
+        }
 
     }
 }
