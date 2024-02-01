@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
+import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
 import android.view.GestureDetector.SimpleOnGestureListener
@@ -17,6 +18,7 @@ import android.view.InflateException
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -30,7 +32,6 @@ import androidx.core.content.ContextCompat
 import com.sbsoft.audiotextassistant.Constants.TIMEOUT_DATE_STR
 import com.sbsoft.audiotextassistant.Utils.findNodeByCoordinates
 import com.sbsoft.audiotextassistant.Utils.findScrollableNodeByCoordinates
-import com.sbsoft.audiotextassistant.Utils.screenMetrics
 import java.text.SimpleDateFormat
 import java.util.ArrayDeque
 import java.util.Date
@@ -184,56 +185,42 @@ class MyAccessibilityService : AccessibilityService() {
     private fun activateOverlayScreen() {
         mode = Mode.ADVANCED
         try {
+
             val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            wm.removeView(mLayout)
+            mLayout?.let {
+                wm.removeView(it)
+            }
             mLayout = FrameLayout(this)
             val inflater = LayoutInflater.from(this)
             inflater.inflate(R.layout.main_overlay, mLayout)
-            val lp = WindowManager.LayoutParams()
-            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            lp.format = PixelFormat.TRANSLUCENT
-            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT
-            lp.gravity = Gravity.TOP
-
-            /*
-            if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
-                mLayout?.setOnApplyWindowInsetsListener { _, insets ->
-                    // Access insets properties such as systemGestureInsets
-                    val systemGestureInsets = insets.getInsets(WindowInsets.Type.systemBars())
-                    val (screenWidth, screenHeight) = screenMetrics(this)
-                    val layoutParams = mLayout?.layoutParams
-                    layoutParams?.width = screenWidth.minus(systemGestureInsets.left + systemGestureInsets.right)
-                    layoutParams?.height = screenHeight.minus(systemGestureInsets.top + systemGestureInsets.bottom) + 30
-                    mLayout?.layoutParams = layoutParams
-                    wm.updateViewLayout(mLayout, layoutParams)
-                    // Return the insets after handling
-                    insets
-                }
-            } else {
-                ViewCompat.setOnApplyWindowInsetsListener(mLayout!!) { _, insets ->
-                    @Suppress("DEPRECATION")
-                    val systemWindowInsets = insets.systemWindowInsets
-                    val (screenWidth, screenHeight) = screenMetrics(this)
-                    val layoutParams = mLayout?.layoutParams
-                    Log.d("XDEBUG insets bottom", systemWindowInsets.bottom.toString())
-                    layoutParams?.width = screenWidth.minus(systemWindowInsets.left + systemWindowInsets.right)
-                    layoutParams?.height = screenHeight.minus(systemWindowInsets.top + systemWindowInsets.bottom+30)
-                    mLayout?.layoutParams = layoutParams
-                    wm.updateViewLayout(mLayout, layoutParams)
-                    // Return the insets after handling
-                    insets
-                }
+            val lp = WindowManager.LayoutParams().apply {
+                type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                format = PixelFormat.TRANSLUCENT
+                flags = flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE //or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                width = WindowManager.LayoutParams.MATCH_PARENT
+                height = WindowManager.LayoutParams.MATCH_PARENT
+                gravity = Gravity.TOP
             }
-
-             */
-
-            val (screenWidth, screenHeight) = screenMetrics(this)
-            // Listen for window insets changes and adjust the layou
+            //val (screenWidth, screenHeight) = screenMetrics(this)
             wm.addView(mLayout, lp)
-            val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
-            mainOverlay?.setOnTouchListener { _, event -> gestureDetectorAdvancedMode.onTouchEvent(event) }
+
+            val mLayout2 = TouchForwardingLayout(this)
+            inflater.inflate(R.layout.main_overlay2, mLayout2)
+            val lp2 = WindowManager.LayoutParams().apply {
+                type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                format = PixelFormat.TRANSLUCENT
+                flags = flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                width = WindowManager.LayoutParams.MATCH_PARENT
+                height = WindowManager.LayoutParams.MATCH_PARENT
+                gravity = Gravity.TOP
+            }
+            //val (screenWidth, screenHeight) = screenMetrics(this)
+            wm.addView(mLayout2, lp2)
+
+            mLayout2.setTargetViewGroup(mLayout!!)
+
+            //val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
+            //mainOverlay?.setOnTouchListener { _, event -> gestureDetectorAdvancedMode.onTouchEvent(event) }
 
             /*
             val windowsInsets = ViewCompat.getRootWindowInsets(mLayout!!)
@@ -540,53 +527,6 @@ class MyAccessibilityService : AccessibilityService() {
 
         btnSpeaker?.setOnTouchListener { view, event -> gestureDetectorBasicMode.onTouchEvent(event) }
 
-        /*
-        btnSpeaker?.setOnTouchListener(object : View.OnTouchListener {
-            private var initialX: Int = 0
-            private var initialY: Int = 0
-            private var initialTouchX: Float = 0.toFloat()
-            private var initialTouchY: Float = 0.toFloat()
-
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x
-                        initialY = params.y
-                        initialTouchX = event.rawX
-                        initialTouchY = event.rawY
-                        moved = false
-                        return false
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        moved = true
-                        params.x = initialX + (event.rawX - initialTouchX).toInt()
-                        params.y = initialY + (event.rawY - initialTouchY).toInt()
-                        windowManager.updateViewLayout(mLayout, params)
-                        return false
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        // Perform a click action when the touch is released
-                        return if (!moved) {
-                            v.post {
-                                switchSpeakerOnOff()
-                                //v.performClick()
-                            }
-                            false
-                        } else {
-                            moved = false
-                            true
-                        }
-                    }
-
-                    else -> {
-                        return false
-                    }
-                }
-            }
-        }
-        )
-         */
-
     }
 
     companion object {
@@ -601,5 +541,41 @@ class MyAccessibilityService : AccessibilityService() {
             putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
         }
 
+    }
+
+    inner class TouchForwardingLayout @JvmOverloads constructor(
+        context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0,
+    ) : FrameLayout(context, attrs, defStyleAttr) {
+
+        private var targetViewGroup: ViewGroup? = null
+
+        // Set the target not-touchable ViewGroup
+        fun setTargetViewGroup(target: ViewGroup) {
+            this.targetViewGroup = target
+        }
+
+        override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+            // Intercept the touch event
+            return true
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            val adjustedEvent = MotionEvent.obtain(event)
+            offsetLocationToTarget(adjustedEvent, targetViewGroup)
+            // Forward the touch event to the target ViewGroup
+            Log.d("XDEBUG", "dispatch event to the mLayout")
+            mLayout?.dispatchTouchEvent(adjustedEvent)
+            mLayout?.performClick()
+            return false
+        }
+
+        private fun offsetLocationToTarget(event: MotionEvent, target: View?) {
+            if (target == null) return
+
+            val location = IntArray(2)
+            target.getLocationOnScreen(location)
+
+            event.offsetLocation(-location[0].toFloat(), -location[1].toFloat())
+        }
     }
 }
