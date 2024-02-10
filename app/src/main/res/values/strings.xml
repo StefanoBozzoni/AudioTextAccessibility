@@ -7,5 +7,6 @@
     <string name="info_service_short">This service assists you in listening to chat messages, web and other apps content through voice narration. To activate this feature, kindly grant the above required permissions.</string>
     <string name="outdated_app_message">The app is outdated and will not work. You have to update it from the playstore.</string>
     <string name="speaker_on_str">speaker on</string>
+    <string name="service_status_active_description">The service is active, you can close this window.</string>
 
 </resources>

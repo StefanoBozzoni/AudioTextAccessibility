@@ -162,6 +162,18 @@ class MyAccessibilityService : AccessibilityService() {
             }, 1000)
         }
 
+        windows.forEach {
+            Log.d("XDEBUG window", it.toString())
+        }
+        val barra = windows.firstOrNull { it.title == "Barra di navigazione" }
+        barra?.let {
+            val rect = Rect()
+            it.getBoundsInScreen(rect)
+            val height = rect.bottom - rect.top
+            Log.d("XDEBUG height", height.toString())
+        }
+
+
     }
 
     private fun switchSpeakerOnOff() {
@@ -190,12 +202,14 @@ class MyAccessibilityService : AccessibilityService() {
             val inflater = LayoutInflater.from(this)
             inflater.inflate(R.layout.main_overlay, mLayout)
             val lp = WindowManager.LayoutParams()
-            lp.type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            lp.format = PixelFormat.TRANSLUCENT
-            lp.flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            lp.width = WindowManager.LayoutParams.MATCH_PARENT
-            lp.height = WindowManager.LayoutParams.MATCH_PARENT
-            lp.gravity = Gravity.TOP
+            lp.apply {
+                type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                format = PixelFormat.TRANSLUCENT
+                flags = lp.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                width = WindowManager.LayoutParams.MATCH_PARENT
+                height = WindowManager.LayoutParams.MATCH_PARENT
+                gravity = Gravity.TOP
+            }
 
             /*
             if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
@@ -205,7 +219,7 @@ class MyAccessibilityService : AccessibilityService() {
                     val (screenWidth, screenHeight) = screenMetrics(this)
                     val layoutParams = mLayout?.layoutParams
                     layoutParams?.width = screenWidth.minus(systemGestureInsets.left + systemGestureInsets.right)
-                    layoutParams?.height = screenHeight.minus(systemGestureInsets.top + systemGestureInsets.bottom) + 30
+                    layoutParams?.height = screenHeight
                     mLayout?.layoutParams = layoutParams
                     wm.updateViewLayout(mLayout, layoutParams)
                     // Return the insets after handling
@@ -219,19 +233,24 @@ class MyAccessibilityService : AccessibilityService() {
                     val layoutParams = mLayout?.layoutParams
                     Log.d("XDEBUG insets bottom", systemWindowInsets.bottom.toString())
                     layoutParams?.width = screenWidth.minus(systemWindowInsets.left + systemWindowInsets.right)
-                    layoutParams?.height = screenHeight.minus(systemWindowInsets.top + systemWindowInsets.bottom+30)
+                    layoutParams?.height = screenHeight
                     mLayout?.layoutParams = layoutParams
                     wm.updateViewLayout(mLayout, layoutParams)
                     // Return the insets after handling
                     insets
                 }
             }
+            */
 
-             */
+            wm.addView(mLayout, lp)
 
             val (screenWidth, screenHeight) = screenMetrics(this)
-            // Listen for window insets changes and adjust the layou
-            wm.addView(mLayout, lp)
+            val layoutParams = mLayout?.layoutParams
+            layoutParams?.width = screenWidth
+            layoutParams?.height = screenHeight
+            Log.d("XDEBUG height", screenHeight.toString())
+            wm.updateViewLayout(mLayout, layoutParams)
+
             val mainOverlay = mLayout?.findViewById<ViewGroup>(R.id.mainOverlayView)
             mainOverlay?.setOnTouchListener { _, event -> gestureDetectorAdvancedMode.onTouchEvent(event) }
 
@@ -453,14 +472,19 @@ class MyAccessibilityService : AccessibilityService() {
 
     private fun speakText(testo: String, overrideCheck: Boolean = false) {
         if (testo != "null" && (speakerState == SpeakerState.SPEAKERON || overrideCheck)) {
-            val params = Bundle()
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_MUSIC)
-            tts.speak(
-                testo,
-                TextToSpeech.QUEUE_ADD,
-                STREAM_MUSIC_PARAM,
-                null
-            )
+            if (overrideCheck)
+                tts.speak(
+                    testo,
+                    TextToSpeech.QUEUE_FLUSH,
+                    STREAM_MUSIC_PARAM,
+                    null
+                ) else
+                tts.speak(
+                    testo,
+                    TextToSpeech.QUEUE_ADD,
+                    STREAM_MUSIC_PARAM,
+                    null
+                )
         }
     }
 
@@ -472,6 +496,7 @@ class MyAccessibilityService : AccessibilityService() {
     private fun speakTree(root: AccessibilityNodeInfo) {
         val deque: Deque<AccessibilityNodeInfo> = ArrayDeque()
         deque.add(root)
+        var textToSpeach = ""
         while (!deque.isEmpty()) {
             val node = deque.removeFirst()
             Log.d("XDEBUG text", node.toString())
@@ -483,17 +508,20 @@ class MyAccessibilityService : AccessibilityService() {
             val isAdvertiseButton = ((boundsinScreen.top < 0) || (boundsinScreen.left < 0) || boundsinScreen.right < 0 || boundsinScreen.bottom < 0)
 
             if (node.isClickable && contentDescription.isNotEmpty() && contentDescription != "null" && !isAdvertiseButton) {
-                speakText(node?.contentDescription.toString())
+                //speakText(node?.contentDescription.toString())
+                textToSpeach += node?.contentDescription.toString()
                 Log.d("XDEBUG isClickable", node.className.toString() + " / " + node.text.toString() + " / " + '/' + node.contentDescription + "/" + node.isClickable + "/" + node.isContextClickable)
             } else {
                 if (node.isVisibleToUser) {
-                    speakText(node?.text.toString())
+                    //speakText(node?.text.toString())
+                    textToSpeach += node?.text.toString()
                 }
                 for (i in 0 until node.childCount) {
                     if ((node != null) && (node.getChild(i) != null)) deque.addLast(node.getChild(i))
                 }
             }
         }
+        speakText((textToSpeach))
     }
 
     override fun onInterrupt() {
