@@ -340,8 +340,6 @@ class MyAccessibilityService : AccessibilityService() {
                 //arguments.putInt("scrollAmount", 0)
                 //arguments.putFloat("velocity", 0.01f)
                 scrollableNode?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD, arguments)
-
-
             }
 
             SWIPE_DOWN -> {
